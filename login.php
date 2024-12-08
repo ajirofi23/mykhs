@@ -1,39 +1,56 @@
 <?php
 session_start();
-include('db_connection.php'); // Make sure to include your DB connection file
+include('db_connection.php'); // Koneksi ke database
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Collect form data
-    $username = $_POST['username'];
-    $password = md5($_POST['password']);  // Make sure to hash the password for comparison
+    // Ambil data dari form dan sanitasi input
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']); 
 
-    // Check if the user exists in the database
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ? AND password = ?");
-    $stmt->bind_param("ss", $username, $password);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    // Query untuk mencari user berdasarkan username
+    $stmt = $conn->prepare("SELECT username, password, role FROM users WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
 
-    if ($result->num_rows > 0) {
-        // User found, fetch their role
-        $user = $result->fetch_assoc();
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['role'] = $user['role'];
+        if ($result->num_rows > 0) {
+            $user = $result->fetch_assoc();
 
-        // Redirect based on the role
-        if ($user['role'] == 'mahasiswa') {
-            header("Location: mahasiswa/index.php");
-        } elseif ($user['role'] == 'dosen') {
-            header("Location: dosen/index.php");
-        } elseif ($user['role'] == 'admin') {
-            header("Location: admin/index.php");
+            // Pengecekan password (MD5 atau password_hash)
+            if (strlen($user['password']) == 32) { // Password MD5
+                $isPasswordValid = (md5($password) === $user['password']);
+            } else { // Password menggunakan password_hash
+                $isPasswordValid = password_verify($password, $user['password']);
+            }
+
+            if ($isPasswordValid) {
+                // Set session untuk user
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['role'] = $user['role'];
+
+                // Redirect berdasarkan role
+                $redirectPaths = [
+                    'mahasiswa' => 'mahasiswa/index.php',
+                    'dosen' => 'dosen/index.php'
+                ];
+
+                header("Location: " . ($redirectPaths[$user['role']] ?? 'login.php'));
+                exit();
+            } else {
+                echo "<script>alert('Password salah!');</script>";
+            }
+        } else {
+            echo "<script>alert('Username tidak ditemukan!');</script>";
         }
-        exit();
     } else {
-        echo "<script>alert('Invalid username or password!');</script>";
+        // Debugging query error
+        echo "Query gagal: " . $stmt->error;
     }
 }
 ?>
-<!DOCTYPE html> 
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -49,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             background-attachment: fixed;
             background-position: center;
             backdrop-filter: brightness(0.9);
+            overflow: hidden;
         }
         .login-container {
             backdrop-filter: blur(10px) brightness(1.1);
@@ -119,14 +137,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <div class="mb-4">
                         <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
                         <input type="password" id="password" name="password" class="form-control mt-1" required>
-                    </div>
-                    <div class="mb-4">
-                        <label for="role" class="block text-sm font-medium text-gray-700">Login sebagai:</label>
-                        <select name="role" id="role" class="form-select mt-1">
-                            <option value="mahasiswa">Mahasiswa</option>
-                            <option value="dosen">Dosen</option>
-                            <option value="admin">Admin</option>
-                        </select>
                     </div>
                     <div class="text-center">
                         <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">Login</button>

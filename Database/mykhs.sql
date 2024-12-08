@@ -1,9 +1,3 @@
--- Create the database
-CREATE DATABASE mykhs;
-
--- Use the database
-USE mykhs;
-
 -- Table for users (login)
 CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,

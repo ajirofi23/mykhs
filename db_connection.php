@@ -1,13 +1,13 @@
 <?php
-$servername = "localhost";  // Your MySQL server (often 'localhost' for local setup)
-$username = "root";         // Your MySQL username (default is 'root' for local)
-$password = "";             // Your MySQL password (leave empty if none is set)
-$dbname = "mykhs";          // The name of your database
+$servername = "localhost";
+$username = "root";  // Ganti dengan username MySQL Anda
+$password = "mysql123";      // Ganti dengan password MySQL Anda
+$dbname = "mykhs";   // Ganti dengan nama database Anda
 
-// Create connection
+// Membuat koneksi
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Check connection
+// Mengecek koneksi
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
